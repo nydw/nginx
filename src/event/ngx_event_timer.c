@@ -49,12 +49,12 @@ ngx_event_timer_init(ngx_log_t *log)
 
 
 ngx_msec_t
-ngx_event_find_timer(void)  // 找出红黑树左边的节点
+ngx_event_find_timer(void)  // lgx_mark  返回距离最近超时事件的时间，若有事件超时则返回0
 {
     ngx_msec_int_t      timer;
     ngx_rbtree_node_t  *node, *root, *sentinel;
 
-    if (ngx_event_timer_rbtree.root == &ngx_event_timer_sentinel) {
+    if (ngx_event_timer_rbtree.root == &ngx_event_timer_sentinel) {  // 根节点为空
         return NGX_TIMER_INFINITE;
     }
 
@@ -63,11 +63,11 @@ ngx_event_find_timer(void)  // 找出红黑树左边的节点
     root = ngx_event_timer_rbtree.root;
     sentinel = ngx_event_timer_rbtree.sentinel;
 
-    node = ngx_rbtree_min(root, sentinel);
+    node = ngx_rbtree_min(root, sentinel);   //  //获取rb-tree中的最小节点
 
     ngx_mutex_unlock(ngx_event_timer_mutex);
 
-    timer = (ngx_msec_int_t) (node->key - ngx_current_msec);
+    timer = (ngx_msec_int_t) (node->key - ngx_current_msec); // 最小值-当前时间，当该值大于0即表明没有需要处理的超时事件
 
     return (ngx_msec_t) (timer > 0 ? timer : 0);
 }

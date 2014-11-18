@@ -470,15 +470,15 @@ typedef struct {
     ngx_uint_t    connections; // 单进程最大连接数
     ngx_uint_t    use;   // 选用的事件模块在所有事件模块中的序号
 
-    ngx_flag_t    multi_accept; // 尽可能多的接收连接
-    ngx_flag_t    accept_mutex;
+    ngx_flag_t    multi_accept; //  1 尽可能多的接收连接
+    ngx_flag_t    accept_mutex; //  1 表示启用负载均衡锁
 
-    ngx_msec_t    accept_mutex_delay;
+    ngx_msec_t    accept_mutex_delay; //  拿不到负载均衡锁时延迟简历连接的时间
 
-    u_char       *name;
+    u_char       *name;   // 事件模块的名字
 
 #if (NGX_DEBUG)
-    ngx_array_t   debug_connection;
+    ngx_array_t   debug_connection;   // 调试
 #endif
 } ngx_event_conf_t;
 

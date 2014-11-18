@@ -16,7 +16,7 @@
 #if (NGX_HAVE_KQUEUE)
 
 ssize_t
-ngx_readv_chain(ngx_connection_t *c, ngx_chain_t *chain)
+ngx_readv_chain(ngx_connection_t *c, ngx_chain_t *chain)  // freebsd kqueue
 {
     u_char        *prev;
     ssize_t        n, size;

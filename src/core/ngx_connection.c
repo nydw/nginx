@@ -820,7 +820,7 @@ ngx_close_listening_sockets(ngx_cycle_t *cycle) //lgx_mark 关闭监听的端口
 
 
 ngx_connection_t *
-ngx_get_connection(ngx_socket_t s, ngx_log_t *log) // lgx_mark 获取一个连接
+ngx_get_connection(ngx_socket_t s, ngx_log_t *log) // lgx_mark 从空闲连接链表获取一个连接
 {
     ngx_uint_t         instance;
     ngx_event_t       *rev, *wev;

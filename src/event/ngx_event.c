@@ -121,7 +121,7 @@ static ngx_str_t  event_core_name = ngx_string("event_core");
 
 static ngx_command_t  ngx_event_core_commands[] = {
 
-    {   ngx_string("worker_connections"),
+    {   ngx_string("worker_connections"),  //  lgx_mark   一个worker进程的最大TCP连接数
         NGX_EVENT_CONF|NGX_CONF_TAKE1,
         ngx_event_connections,
         0,
@@ -137,7 +137,7 @@ static ngx_command_t  ngx_event_core_commands[] = {
         NULL
     },
 
-    {   ngx_string("use"),
+    {   ngx_string("use"),      /*  lgx_mark  确定选择哪一个事件模块作为事件驱动机制 */
         NGX_EVENT_CONF|NGX_CONF_TAKE1,
         ngx_event_use,
         0,
@@ -145,7 +145,7 @@ static ngx_command_t  ngx_event_core_commands[] = {
         NULL
     },
 
-    {   ngx_string("multi_accept"),
+    {   ngx_string("multi_accept"),   /*  lgx_mark  当有连接事件时，尽可能多地建立连接 */
         NGX_EVENT_CONF|NGX_CONF_FLAG,
         ngx_conf_set_flag_slot,
         0,
@@ -153,7 +153,7 @@ static ngx_command_t  ngx_event_core_commands[] = {
         NULL
     },
 
-    {   ngx_string("accept_mutex"),
+    {   ngx_string("accept_mutex"),    /*  lgx_mark  确定是否使用负载均衡锁 */
         NGX_EVENT_CONF|NGX_CONF_FLAG,
         ngx_conf_set_flag_slot,
         0,
@@ -161,7 +161,7 @@ static ngx_command_t  ngx_event_core_commands[] = {
         NULL
     },
 
-    {   ngx_string("accept_mutex_delay"),
+    {   ngx_string("accept_mutex_delay"),   /*  lgx_mark  启用负载均衡锁后，延迟accept_mutex_delay毫秒再处理新连接事件 */
         NGX_EVENT_CONF|NGX_CONF_TAKE1,
         ngx_conf_set_msec_slot,
         0,
@@ -169,7 +169,7 @@ static ngx_command_t  ngx_event_core_commands[] = {
         NULL
     },
 
-    {   ngx_string("debug_connection"),
+    {   ngx_string("debug_connection"),  /*  lgx_mark  对指定IP的TCP连接打印debug级别的调试日志 */
         NGX_EVENT_CONF|NGX_CONF_TAKE1,
         ngx_event_debug_connection,
         0,
@@ -182,6 +182,7 @@ static ngx_command_t  ngx_event_core_commands[] = {
 
 
 ngx_event_module_t  ngx_event_core_module_ctx = {
+
     &event_core_name,
     ngx_event_core_create_conf,            /* create configuration */
     ngx_event_core_init_conf,              /* init configuration */
@@ -190,14 +191,14 @@ ngx_event_module_t  ngx_event_core_module_ctx = {
 };
 
 
-ngx_module_t  ngx_event_core_module = {  // lgx_mark 决定使用哪种事件驱动机制
+ngx_module_t  ngx_event_core_module = {  // lgx_mark 创建连接池; 决定使用哪种事件驱动机制; 初始化将要使用的事件模块. 管理更下层的事件驱动模块.
     NGX_MODULE_V1,
     &ngx_event_core_module_ctx,            /* module context */
     ngx_event_core_commands,               /* module directives */
     NGX_EVENT_MODULE,                      /* module type */
     NULL,                                  /* init master */
-    ngx_event_module_init,                 /* init module */
-    ngx_event_process_init,                /* init process */
+    ngx_event_module_init,                 /* init module  fork出worker进程之前调用*/
+    ngx_event_process_init,                /* init process fork出worker进程之后调用*/
     NULL,                                  /* init thread */
     NULL,                                  /* exit thread */
     NULL,                                  /* exit process */
@@ -212,17 +213,21 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)  // Nginx事件处理的入口函数
     ngx_uint_t  flags;
     ngx_msec_t  timer, delta;
 
-    if (ngx_timer_resolution) {
+    if (ngx_timer_resolution)
+    {
         timer = NGX_TIMER_INFINITE;
         flags = 0;
 
-    } else {
-        timer = ngx_event_find_timer();
+    }
+    else
+    {
+        timer = ngx_event_find_timer(); // lgx_mark 从rbtree中找出最小时间，并计算与当前时间之差。查找timer，返回距离最近超时事件的时间，若有事件超时则返回0
         flags = NGX_UPDATE_TIME;
 
 #if (NGX_THREADS)
 
-        if (timer == NGX_TIMER_INFINITE || timer > 500) {
+        if (timer == NGX_TIMER_INFINITE || timer > 500)
+        {
             timer = 500;
         }
 
@@ -472,7 +477,8 @@ ngx_event_module_init(ngx_cycle_t *cycle)
     cf = ngx_get_conf(cycle->conf_ctx, ngx_events_module);
     ecf = (*cf)[ngx_event_core_module.ctx_index];
 
-    if (!ngx_test_config && ngx_process <= NGX_PROCESS_MASTER) {
+    if (!ngx_test_config && ngx_process <= NGX_PROCESS_MASTER)
+    {
         ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0,
                       "using the \"%s\" event method", ecf->name);
     }
@@ -618,11 +624,13 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     ecf = ngx_event_get_conf(cycle->conf_ctx, ngx_event_core_module);
 
     if (ccf->master && ccf->worker_processes > 1 && ecf->accept_mutex) {
-        ngx_use_accept_mutex = 1;
+        ngx_use_accept_mutex = 1;  // lgx_mark 启用负载均衡锁
         ngx_accept_mutex_held = 0;
         ngx_accept_mutex_delay = ecf->accept_mutex_delay;
 
-    } else {
+    }
+    else
+    {
         ngx_use_accept_mutex = 0;
     }
 
@@ -644,22 +652,26 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     }
 #endif
 
-    if (ngx_event_timer_init(cycle->log) == NGX_ERROR) {
+    if (ngx_event_timer_init(cycle->log) == NGX_ERROR) {  // 初始化rbtree 时间计时器
         return NGX_ERROR;
     }
 
-    for (m = 0; ngx_modules[m]; m++) {
-        if (ngx_modules[m]->type != NGX_EVENT_MODULE) {
+    for (m = 0; ngx_modules[m]; m++)
+    {
+        if (ngx_modules[m]->type != NGX_EVENT_MODULE)
+        {
             continue;
         }
 
-        if (ngx_modules[m]->ctx_index != ecf->use) {
+        if (ngx_modules[m]->ctx_index != ecf->use)
+        {
             continue;
         }
 
         module = ngx_modules[m]->ctx;
 
-        if (module->actions.init(cycle, ngx_timer_resolution) != NGX_OK) {
+        if (module->actions.init(cycle, ngx_timer_resolution) != NGX_OK)  // lgx_mark 事件模块初始化
+        {
             /* fatal */
             exit(2);
         }
@@ -669,7 +681,8 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
 #if !(NGX_WIN32)
 
-    if (ngx_timer_resolution && !(ngx_event_flags & NGX_USE_TIMER_EVENT)) {
+    if (ngx_timer_resolution && !(ngx_event_flags & NGX_USE_TIMER_EVENT))
+    {
         struct sigaction  sa;
         struct itimerval  itv;
 
@@ -715,38 +728,46 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 #endif
 
     cycle->connections =
-        ngx_alloc(sizeof(ngx_connection_t) * cycle->connection_n, cycle->log);
+        ngx_alloc(sizeof(ngx_connection_t) * cycle->connection_n, cycle->log);  // lgx_mark 分配连接缓冲池
+
     if (cycle->connections == NULL) {
         return NGX_ERROR;
     }
 
     c = cycle->connections;
 
-    cycle->read_events = ngx_alloc(sizeof(ngx_event_t) * cycle->connection_n,
+    cycle->read_events = ngx_alloc(sizeof(ngx_event_t) * cycle->connection_n,   // lgx_mark 预分配读事件缓冲池
                                    cycle->log);
     if (cycle->read_events == NULL) {
         return NGX_ERROR;
     }
 
     rev = cycle->read_events;
-    for (i = 0; i < cycle->connection_n; i++) {
+    for (i = 0; i < cycle->connection_n; i++)
+    {
         rev[i].closed = 1;
         rev[i].instance = 1;
+
 #if (NGX_THREADS)
         rev[i].lock = &c[i].lock;
         rev[i].own_lock = &c[i].lock;
 #endif
+
     }
 
     cycle->write_events = ngx_alloc(sizeof(ngx_event_t) * cycle->connection_n,
                                     cycle->log);
-    if (cycle->write_events == NULL) {
+
+	if (cycle->write_events == NULL)
+    {
         return NGX_ERROR;
     }
 
     wev = cycle->write_events;
-    for (i = 0; i < cycle->connection_n; i++) {
+    for (i = 0; i < cycle->connection_n; i++) 
+	{
         wev[i].closed = 1;
+		时间 
 #if (NGX_THREADS)
         wev[i].lock = &c[i].lock;
         wev[i].own_lock = &c[i].lock;
@@ -760,7 +781,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         i--;
 
         c[i].data = next;
-        c[i].read = &cycle->read_events[i];
+        c[i].read = &cycle->read_events[i];   // lgx_mark 一个连接一个读事件结构对应读事件数组的一个元素,一个连接对应一个读事件和一个写事件
         c[i].write = &cycle->write_events[i];
         c[i].fd = (ngx_socket_t) -1;
 
@@ -769,6 +790,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 #if (NGX_THREADS)
         c[i].lock = 0;
 #endif
+
     } while (i);
 
     cycle->free_connections = next;
@@ -779,7 +801,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     ls = cycle->listening.elts;
     for (i = 0; i < cycle->listening.nelts; i++) {
 
-        c = ngx_get_connection(ls[i].fd, cycle->log);
+        c = ngx_get_connection(ls[i].fd, cycle->log); 
 
         if (c == NULL) {
             return NGX_ERROR;
@@ -790,7 +812,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         c->listening = &ls[i];
         ls[i].connection = c;
 
-        rev = c->read;
+        rev = c->read; // 连接对应的读事件
 
         rev->log = c->log;
         rev->accept = 1;
@@ -819,45 +841,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
             }
         }
 
-#if (NGX_WIN32)
-
-        if (ngx_event_flags & NGX_USE_IOCP_EVENT) {
-            ngx_iocp_conf_t  *iocpcf;
-
-            rev->handler = ngx_event_acceptex;
-
-            if (ngx_use_accept_mutex) {
-                continue;
-            }
-
-            if (ngx_add_event(rev, 0, NGX_IOCP_ACCEPT) == NGX_ERROR) {
-                return NGX_ERROR;
-            }
-
-            ls[i].log.handler = ngx_acceptex_log_error;
-
-            iocpcf = ngx_event_get_conf(cycle->conf_ctx, ngx_iocp_module);
-            if (ngx_event_post_acceptex(&ls[i], iocpcf->post_acceptex)
-                    == NGX_ERROR)
-            {
-                return NGX_ERROR;
-            }
-
-        } else {
-            rev->handler = ngx_event_accept;
-
-            if (ngx_use_accept_mutex) {
-                continue;
-            }
-
-            if (ngx_add_event(rev, NGX_READ_EVENT, 0) == NGX_ERROR) {
-                return NGX_ERROR;
-            }
-        }
-
-#else
-
-        rev->handler = ngx_event_accept;
+        rev->handler = ngx_event_accept;  // lgx_mark 设置读事件的处理方法 accept
 
         if (ngx_use_accept_mutex) {
             continue;
@@ -869,12 +853,10 @@ ngx_event_process_init(ngx_cycle_t *cycle)
             }
 
         } else {
-            if (ngx_add_event(rev, NGX_READ_EVENT, 0) == NGX_ERROR) {
+            if (ngx_add_event(rev, NGX_READ_EVENT, 0) == NGX_ERROR) { // 将监听连接的读事件添加到epoll模块
                 return NGX_ERROR;
             }
         }
-
-#endif
 
     }
 
@@ -1251,11 +1233,14 @@ ngx_event_core_init_conf(ngx_cycle_t *cycle, void *conf)
 
     fd = epoll_create(100);
 
-    if (fd != -1) {
+    if (fd != -1)
+    {
         (void) close(fd);
         module = &ngx_epoll_module;
 
-    } else if (ngx_errno != NGX_ENOSYS) {
+    }
+    else if (ngx_errno != NGX_ENOSYS)
+    {
         module = &ngx_epoll_module;
     }
 
@@ -1263,11 +1248,13 @@ ngx_event_core_init_conf(ngx_cycle_t *cycle, void *conf)
 
 #if (NGX_HAVE_RTSIG)
 
-    if (module == NULL) {
+    if (module == NULL)
+    {
         module = &ngx_rtsig_module;
         rtsig = 1;
-
-    } else {
+    }
+    else
+    {
         rtsig = 0;
     }
 
@@ -1287,16 +1274,20 @@ ngx_event_core_init_conf(ngx_cycle_t *cycle, void *conf)
 
 #if (NGX_HAVE_SELECT)
 
-    if (module == NULL) {
+    if (module == NULL)
+    {
         module = &ngx_select_module;
     }
 
 #endif
 
-    if (module == NULL) {
-        for (i = 0; ngx_modules[i]; i++) {
+    if (module == NULL)
+    {
+        for (i = 0; ngx_modules[i]; i++)
+        {
 
-            if (ngx_modules[i]->type != NGX_EVENT_MODULE) {
+            if (ngx_modules[i]->type != NGX_EVENT_MODULE)
+            {
                 continue;
             }
 
@@ -1308,11 +1299,14 @@ ngx_event_core_init_conf(ngx_cycle_t *cycle, void *conf)
             }
 
             module = ngx_modules[i];
+
             break;
         }
+
     }
 
-    if (module == NULL) {
+    if (module == NULL)
+    {
         ngx_log_error(NGX_LOG_EMERG, cycle->log, 0, "no events module found");
         return NGX_CONF_ERROR;
     }
@@ -1332,17 +1326,20 @@ ngx_event_core_init_conf(ngx_cycle_t *cycle, void *conf)
 
 #if (NGX_HAVE_RTSIG)
 
-    if (!rtsig) {
+    if (!rtsig)
+    {
         return NGX_CONF_OK;
     }
 
-    if (ecf->accept_mutex) {
+    if (ecf->accept_mutex)
+    {
         return NGX_CONF_OK;
     }
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
-    if (ccf->worker_processes == 0) {
+    if (ccf->worker_processes == 0)
+    {
         return NGX_CONF_OK;
     }
 
@@ -1356,4 +1353,10 @@ ngx_event_core_init_conf(ngx_cycle_t *cycle, void *conf)
     return NGX_CONF_OK;
 
 #endif
+
+
+
 }
+
+
+

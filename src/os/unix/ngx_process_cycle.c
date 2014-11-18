@@ -302,7 +302,7 @@ ngx_single_process_cycle(ngx_cycle_t *cycle)  // 进入单进程模式
 
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->init_process) {
-            if (ngx_modules[i]->init_process(cycle) == NGX_ERROR) {
+            if (ngx_modules[i]->init_process(cycle) == NGX_ERROR) {  // 初始化每个模块
                 /* fatal */
                 exit(2);
             }
@@ -314,10 +314,13 @@ ngx_single_process_cycle(ngx_cycle_t *cycle)  // 进入单进程模式
 
         ngx_process_events_and_timers(cycle);
 
-        if (ngx_terminate || ngx_quit) {
+        if (ngx_terminate || ngx_quit)
+        {
 
-            for (i = 0; ngx_modules[i]; i++) {
-                if (ngx_modules[i]->exit_process) {
+            for (i = 0; ngx_modules[i]; i++)
+            {
+                if (ngx_modules[i]->exit_process)
+                {
                     ngx_modules[i]->exit_process(cycle);
                 }
             }
@@ -325,7 +328,8 @@ ngx_single_process_cycle(ngx_cycle_t *cycle)  // 进入单进程模式
             ngx_master_process_exit(cycle);
         }
 
-        if (ngx_reconfigure) {
+        if (ngx_reconfigure)
+        {
             ngx_reconfigure = 0;
             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "reconfiguring");
 
@@ -338,7 +342,8 @@ ngx_single_process_cycle(ngx_cycle_t *cycle)  // 进入单进程模式
             ngx_cycle = cycle;
         }
 
-        if (ngx_reopen) {
+        if (ngx_reopen)
+        {
             ngx_reopen = 0;
             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "reopening logs");
             ngx_reopen_files(cycle, (ngx_uid_t) -1);

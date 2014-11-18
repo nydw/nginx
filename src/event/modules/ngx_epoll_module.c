@@ -155,11 +155,13 @@ static ngx_command_t  ngx_epoll_commands[] = {
 
 
 ngx_event_module_t  ngx_epoll_module_ctx = {
+	
     &epoll_name,
     ngx_epoll_create_conf,               /* create configuration */
     ngx_epoll_init_conf,                 /* init configuration */
 
-    {
+    {   // lgx_mark action
+
         ngx_epoll_add_event,             /* add an event */
         ngx_epoll_del_event,             /* delete an event */
         ngx_epoll_add_event,             /* enable an event */
@@ -170,7 +172,9 @@ ngx_event_module_t  ngx_epoll_module_ctx = {
         ngx_epoll_process_events,        /* process the events */
         ngx_epoll_init,                  /* init the events */
         ngx_epoll_done,                  /* done the events */
+
     }
+
 };
 
 ngx_module_t  ngx_epoll_module = {
@@ -179,6 +183,7 @@ ngx_module_t  ngx_epoll_module = {
     ngx_epoll_commands,                  /* module directives */
     NGX_EVENT_MODULE,                    /* module type */
     NULL,                                /* init master */
+    
     NULL,                                /* init module */
     NULL,                                /* init process */
     NULL,                                /* init thread */
@@ -231,9 +236,11 @@ ngx_epoll_aio_init(ngx_cycle_t *cycle, ngx_epoll_conf_t *epcf)
 
     ngx_eventfd = syscall(SYS_eventfd, 0);
 
-    if (ngx_eventfd == -1) {
+    if (ngx_eventfd == -1)
+    {
         ngx_log_error(NGX_LOG_EMERG, cycle->log, ngx_errno,
                       "eventfd() failed");
+
         ngx_file_aio = 0;
         return;
     }
@@ -243,44 +250,50 @@ ngx_epoll_aio_init(ngx_cycle_t *cycle, ngx_epoll_conf_t *epcf)
 
     n = 1;
 
-    if (ioctl(ngx_eventfd, FIONBIO, &n) == -1) {  // 设置为无阻塞
+    if (ioctl(ngx_eventfd, FIONBIO, &n) == -1)    // 设置为无阻塞
+    {
         ngx_log_error(NGX_LOG_EMERG, cycle->log, ngx_errno,
                       "ioctl(eventfd, FIONBIO) failed");
         goto failed;
     }
 
-    if (io_setup(epcf->aio_requests, &ngx_aio_ctx) == -1) {
+    if (io_setup(epcf->aio_requests, &ngx_aio_ctx) == -1)  // 32
+    {
         ngx_log_error(NGX_LOG_EMERG, cycle->log, ngx_errno,
                       "io_setup() failed");
         goto failed;
     }
 
-    ngx_eventfd_event.data = &ngx_eventfd_conn;
-    ngx_eventfd_event.handler = ngx_epoll_eventfd_handler;
+    ngx_eventfd_event.data = &ngx_eventfd_conn; // 传递给epoll的数据
+    ngx_eventfd_event.handler = ngx_epoll_eventfd_handler; // lgx_mark 收到eventfd可读通知后，epoll要执行的读方法
     ngx_eventfd_event.log = cycle->log;
     ngx_eventfd_event.active = 1;
+
     ngx_eventfd_conn.fd = ngx_eventfd;
     ngx_eventfd_conn.read = &ngx_eventfd_event;
     ngx_eventfd_conn.log = cycle->log;
 
-    ee.events = EPOLLIN|EPOLLET;
+    ee.events = EPOLLIN|EPOLLET;   // 检查可读事件
     ee.data.ptr = &ngx_eventfd_conn;
 
-    if (epoll_ctl(ep, EPOLL_CTL_ADD, ngx_eventfd, &ee) != -1) {
-        return;
+    if (epoll_ctl(ep, EPOLL_CTL_ADD, ngx_eventfd, &ee) != -1)
+    {
+        return;   // 成功后返回
     }
 
     ngx_log_error(NGX_LOG_EMERG, cycle->log, ngx_errno,
                   "epoll_ctl(EPOLL_CTL_ADD, eventfd) failed");
 
-    if (io_destroy(ngx_aio_ctx) == -1) {
+    if (io_destroy(ngx_aio_ctx) == -1)
+    {
         ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                       "io_destroy() failed");
     }
 
 failed:
 
-    if (close(ngx_eventfd) == -1) {
+    if (close(ngx_eventfd) == -1)
+    {
         ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                       "eventfd close() failed");
     }
@@ -288,6 +301,7 @@ failed:
     ngx_eventfd = -1;
     ngx_aio_ctx = 0;
     ngx_file_aio = 0;
+
 }
 
 #endif
@@ -300,39 +314,45 @@ ngx_epoll_init(ngx_cycle_t *cycle, ngx_msec_t timer)
 
     epcf = ngx_event_get_conf(cycle->conf_ctx, ngx_epoll_module); // 解析配置项
 
-    if (ep == -1) {
+    if (ep == -1)
+    {
         ep = epoll_create(cycle->connection_n / 2); // lgx_mark 创建epoll对象
 
-        if (ep == -1) {
+        if (ep == -1)
+        {
             ngx_log_error(NGX_LOG_EMERG, cycle->log, ngx_errno,
                           "epoll_create() failed");
             return NGX_ERROR;
         }
 
 #if (NGX_HAVE_FILE_AIO)
-
         ngx_epoll_aio_init(cycle, epcf); // lgx_mark 异步IO初始化
 
 #endif
+
     }
 
-    if (nevents < epcf->events) {
-        if (event_list) {
+    if (nevents < epcf->events)
+    {
+        if (event_list)
+        {
             ngx_free(event_list);
         }
 
         event_list = ngx_alloc(sizeof(struct epoll_event) * epcf->events,
                                cycle->log);
-        if (event_list == NULL) {
+
+        if (event_list == NULL)
+        {
             return NGX_ERROR;
         }
     }
 
     nevents = epcf->events;
 
-    ngx_io = ngx_os_io;
+    ngx_io = ngx_os_io;   //  lgx_mark IO接收和发送函数集合
 
-    ngx_event_actions = ngx_epoll_module_ctx.actions;
+    ngx_event_actions = ngx_epoll_module_ctx.actions;  // lgx_mark 事件处理句柄集合
 
 #if (NGX_HAVE_CLEAR_EVENT)
     ngx_event_flags = NGX_USE_CLEAR_EVENT
@@ -342,7 +362,9 @@ ngx_epoll_init(ngx_cycle_t *cycle, ngx_msec_t timer)
                       |NGX_USE_GREEDY_EVENT
                       |NGX_USE_EPOLL_EVENT;
 
+
     return NGX_OK;
+
 }
 
 
@@ -766,7 +788,7 @@ ngx_epoll_eventfd_handler(ngx_event_t *ev) // 处理已经完成异步IO事件
 
     ngx_log_debug0(NGX_LOG_DEBUG_EVENT, ev->log, 0, "eventfd handler");
 
-    n = read(ngx_eventfd, &ready, 8);
+    n = read(ngx_eventfd, &ready, 8);  // lgx_mark 读取事件个数
 
     err = ngx_errno;
 
@@ -801,7 +823,7 @@ ngx_epoll_eventfd_handler(ngx_event_t *ev) // 处理已经完成异步IO事件
         {
             ready -= events;
 
-            for (i = 0; i < events; i++)
+            for (i = 0; i < events; i++)  // lgx_mark 遍历event 然后处理事件
             {
 
                 ngx_log_debug4(NGX_LOG_DEBUG_EVENT, ev->log, 0,
@@ -818,7 +840,7 @@ ngx_epoll_eventfd_handler(ngx_event_t *ev) // 处理已经完成异步IO事件
                 aio = e->data;
                 aio->res = event[i].res;
 
-                ngx_post_event(e, &ngx_posted_events);
+                ngx_post_event(e, &ngx_posted_events); // post 事件
             }
 
             continue;

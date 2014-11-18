@@ -60,16 +60,16 @@ static ngx_int_t ngx_rtsig_init(ngx_cycle_t *cycle, ngx_msec_t timer);
 static void ngx_rtsig_done(ngx_cycle_t *cycle);
 static ngx_int_t ngx_rtsig_add_connection(ngx_connection_t *c);
 static ngx_int_t ngx_rtsig_del_connection(ngx_connection_t *c,
-    ngx_uint_t flags);
+        ngx_uint_t flags);
 static ngx_int_t ngx_rtsig_process_events(ngx_cycle_t *cycle,
-    ngx_msec_t timer, ngx_uint_t flags);
+        ngx_msec_t timer, ngx_uint_t flags);
 static ngx_int_t ngx_rtsig_process_overflow(ngx_cycle_t *cycle,
-    ngx_msec_t timer, ngx_uint_t flags);
+        ngx_msec_t timer, ngx_uint_t flags);
 
 static void *ngx_rtsig_create_conf(ngx_cycle_t *cycle);
 static char *ngx_rtsig_init_conf(ngx_cycle_t *cycle, void *conf);
 static char *ngx_check_ngx_overflow_threshold_bounds(ngx_conf_t *cf,
-    void *post, void *data);
+        void *post, void *data);
 
 
 static sigset_t        set;
@@ -86,35 +86,39 @@ static ngx_conf_num_bounds_t  ngx_overflow_threshold_bounds = {
 
 static ngx_command_t  ngx_rtsig_commands[] = {
 
-    { ngx_string("rtsig_signo"),
-      NGX_EVENT_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_num_slot,
-      0,
-      offsetof(ngx_rtsig_conf_t, signo),
-      NULL },
+    {   ngx_string("rtsig_signo"),
+        NGX_EVENT_CONF|NGX_CONF_TAKE1,
+        ngx_conf_set_num_slot,
+        0,
+        offsetof(ngx_rtsig_conf_t, signo),
+        NULL
+    },
 
-    { ngx_string("rtsig_overflow_events"),
-      NGX_EVENT_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_num_slot,
-      0,
-      offsetof(ngx_rtsig_conf_t, overflow_events),
-      NULL },
+    {   ngx_string("rtsig_overflow_events"),
+        NGX_EVENT_CONF|NGX_CONF_TAKE1,
+        ngx_conf_set_num_slot,
+        0,
+        offsetof(ngx_rtsig_conf_t, overflow_events),
+        NULL
+    },
 
-    { ngx_string("rtsig_overflow_test"),
-      NGX_EVENT_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_num_slot,
-      0,
-      offsetof(ngx_rtsig_conf_t, overflow_test),
-      NULL },
+    {   ngx_string("rtsig_overflow_test"),
+        NGX_EVENT_CONF|NGX_CONF_TAKE1,
+        ngx_conf_set_num_slot,
+        0,
+        offsetof(ngx_rtsig_conf_t, overflow_test),
+        NULL
+    },
 
-    { ngx_string("rtsig_overflow_threshold"),
-      NGX_EVENT_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_num_slot,
-      0,
-      offsetof(ngx_rtsig_conf_t, overflow_threshold),
-      &ngx_overflow_threshold_bounds },
+    {   ngx_string("rtsig_overflow_threshold"),
+        NGX_EVENT_CONF|NGX_CONF_TAKE1,
+        ngx_conf_set_num_slot,
+        0,
+        offsetof(ngx_rtsig_conf_t, overflow_threshold),
+        &ngx_overflow_threshold_bounds
+    },
 
-      ngx_null_command
+    ngx_null_command
 };
 
 
@@ -386,7 +390,8 @@ ngx_rtsig_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 
         rev = c->read;
 
-        if (rev->instance != instance) {
+        if (rev->instance != instance)
+        {
 
             /*
              * the stale event from a file descriptor
@@ -399,13 +404,14 @@ ngx_rtsig_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
             return NGX_OK;
         }
 
-        if ((si.si_band & (POLLIN|POLLHUP|POLLERR)) && rev->active) {
+        if ((si.si_band & (POLLIN|POLLHUP|POLLERR)) && rev->active)
+        {
 
             rev->ready = 1;
 
             if (flags & NGX_POST_EVENTS) {
                 queue = (ngx_event_t **) (rev->accept ?
-                               &ngx_posted_accept_events : &ngx_posted_events);
+                                          &ngx_posted_accept_events : &ngx_posted_events);
 
                 ngx_locked_post_event(rev, queue);
 
@@ -430,13 +436,17 @@ ngx_rtsig_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 
         return NGX_OK;
 
-    } else if (signo == SIGALRM) {
+    }
+    else if (signo == SIGALRM)
+    {
 
         ngx_time_update();
 
         return NGX_OK;
 
-    } else if (signo == SIGIO) {
+    }
+    else if (signo == SIGIO)
+    {
 
         ngx_log_error(NGX_LOG_ALERT, cycle->log, 0,
                       "rt signal queue overflowed");
@@ -474,7 +484,7 @@ ngx_rtsig_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 
 static ngx_int_t
 ngx_rtsig_process_overflow(ngx_cycle_t *cycle, ngx_msec_t timer,
-    ngx_uint_t flags)
+                           ngx_uint_t flags)
 {
     int                name[2], rtsig_max, rtsig_nr, events, ready;
     size_t             len;
@@ -566,10 +576,10 @@ ngx_rtsig_process_overflow(ngx_cycle_t *cycle, ngx_msec_t timer,
             rev = c->read;
 
             if (rev->active
-                && !rev->closed
-                && rev->handler
-                && (overflow_list[i].revents
-                                          & (POLLIN|POLLERR|POLLHUP|POLLNVAL)))
+                    && !rev->closed
+                    && rev->handler
+                    && (overflow_list[i].revents
+                        & (POLLIN|POLLERR|POLLHUP|POLLNVAL)))
             {
                 tested++;
 
@@ -582,7 +592,7 @@ ngx_rtsig_process_overflow(ngx_cycle_t *cycle, ngx_msec_t timer,
 
                 if (flags & NGX_POST_EVENTS) {
                     queue = (ngx_event_t **) (rev->accept ?
-                               &ngx_posted_accept_events : &ngx_posted_events);
+                                              &ngx_posted_accept_events : &ngx_posted_events);
 
                     ngx_locked_post_event(rev, queue);
 
@@ -594,10 +604,10 @@ ngx_rtsig_process_overflow(ngx_cycle_t *cycle, ngx_msec_t timer,
             wev = c->write;
 
             if (wev->active
-                && !wev->closed
-                && wev->handler
-                && (overflow_list[i].revents
-                                         & (POLLOUT|POLLERR|POLLHUP|POLLNVAL)))
+                    && !wev->closed
+                    && wev->handler
+                    && (overflow_list[i].revents
+                        & (POLLOUT|POLLERR|POLLHUP|POLLNVAL)))
             {
                 tested++;
 
@@ -651,17 +661,18 @@ ngx_rtsig_process_overflow(ngx_cycle_t *cycle, ngx_msec_t timer,
                     return NGX_ERROR;
                 }
 
-                /*
-                 * drain the rt signal queue if the /"proc/sys/kernel/rtsig-nr"
-                 * is bigger than
-                 *    "/proc/sys/kernel/rtsig-max" / "rtsig_overflow_threshold"
-                 */
+                /* drain the rt signal queue if the /"proc/sys/kernel/rtsig-nr"
+                   * is bigger than
+                   * "/proc/sys/kernel/rtsig-max" / "rtsig_overflow_threshold"*/
 
-                if (rtsig_max / (int) rtscf->overflow_threshold < rtsig_nr) {
+
+                if (rtsig_max / (int) rtscf->overflow_threshold < rtsig_nr)
+                {
                     ngx_log_debug2(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                                    "rtsig queue state: %d/%d",
                                    rtsig_nr, rtsig_max);
-                    while (ngx_rtsig_process_events(cycle, 0, flags) == NGX_OK)
+
+                    while (ngx_rtsig_process_events(cycle, 0, flags) == NGX_OK)  // 清空实时信号队列
                     {
                         /* void */
                     }

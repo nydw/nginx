@@ -20,11 +20,15 @@ struct rlimit  rlmt;
 
 
 ngx_os_io_t ngx_os_io = {
-    ngx_unix_recv,
-    ngx_readv_chain,
+    ngx_unix_recv,     // lgx_mark 接收数据
+
+    ngx_readv_chain,   // 读取多个缓冲区
+
     ngx_udp_unix_recv,
-    ngx_unix_send,
-    ngx_writev_chain,
+
+    ngx_unix_send,     // lgx_mark 发送数据
+
+    ngx_writev_chain,  // 写入多个缓冲区
     0
 };
 
@@ -45,7 +49,9 @@ ngx_os_init(ngx_log_t *log)
     ngx_pagesize = getpagesize();
     ngx_cacheline_size = NGX_CPU_CACHE_LINE;
 
-    for (n = ngx_pagesize; n >>= 1; ngx_pagesize_shift++) { /* void */ }
+    for (n = ngx_pagesize; n >>= 1; ngx_pagesize_shift++) {
+        /* void */
+    }
 
 #if (NGX_HAVE_SC_NPROCESSORS_ONLN)
     if (ngx_ncpu == 0) {

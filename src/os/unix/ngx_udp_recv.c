@@ -13,7 +13,7 @@
 #if (NGX_HAVE_KQUEUE)
 
 ssize_t
-ngx_udp_unix_recv(ngx_connection_t *c, u_char *buf, size_t size)
+ngx_udp_unix_recv(ngx_connection_t *c, u_char *buf, size_t size)  // freebsd
 {
     ssize_t       n;
     ngx_err_t     err;
@@ -71,7 +71,7 @@ ngx_udp_unix_recv(ngx_connection_t *c, u_char *buf, size_t size)
 #else /* ! NGX_HAVE_KQUEUE */
 
 ssize_t
-ngx_udp_unix_recv(ngx_connection_t *c, u_char *buf, size_t size)
+ngx_udp_unix_recv(ngx_connection_t *c, u_char *buf, size_t size)   
 {
     ssize_t       n;
     ngx_err_t     err;

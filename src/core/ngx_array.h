@@ -14,7 +14,7 @@
 
 
 typedef struct {
-    void        *elts;   // 指向世界的数据存储区域
+    void        *elts;   // 指向实际的数据存储区域
     ngx_uint_t   nelts;  // 数组实际元素个数
     size_t       size;   // 数组单个元素的大小
     ngx_uint_t   nalloc; // 数组容量
