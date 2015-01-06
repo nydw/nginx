@@ -325,7 +325,6 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)  // Nginx事件处理的入口函数
         ngx_event_expire_timers();
     }
 
-
     /*
       处理普通事件（连接上获得的读写事件）队列上的所有事件， 
       因为每个事件都有自己的handler方法，该怎么处理事件就 
