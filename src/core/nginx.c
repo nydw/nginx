@@ -233,67 +233,11 @@ main(int argc, char *const *argv)
         return 1;
     }
 
-    if (ngx_show_version) {
-        ngx_write_stderr("nginx version: " NGINX_VER NGX_LINEFEED);
+    ngx_max_sockets = -1;
 
-        if (ngx_show_help) {
-            ngx_write_stderr(
-                "Usage: nginx [-?hvVtq] [-s signal] [-c filename] "
-                "[-p prefix] [-g directives]" NGX_LINEFEED
-                NGX_LINEFEED
-                "Options:" NGX_LINEFEED
-                "  -?,-h         : this help" NGX_LINEFEED
-                "  -v            : show version and exit" NGX_LINEFEED
-                "  -V            : show version and configure options then exit"
-                NGX_LINEFEED
-                "  -t            : test configuration and exit" NGX_LINEFEED
-                "  -q            : suppress non-error messages "
-                "during configuration testing" NGX_LINEFEED
-                "  -s signal     : send signal to a master process: "
-                "stop, quit, reopen, reload" NGX_LINEFEED
-#ifdef NGX_PREFIX
-                "  -p prefix     : set prefix path (default: "
-                NGX_PREFIX ")" NGX_LINEFEED
-#else
-                "  -p prefix     : set prefix path (default: NONE)" NGX_LINEFEED
-#endif
-                "  -c filename   : set configuration file (default: "
-                NGX_CONF_PATH ")" NGX_LINEFEED
-                "  -g directives : set global directives out of configuration "
-                "file" NGX_LINEFEED NGX_LINEFEED
-            );
-        }
-
-        if (ngx_show_configure) {
-            ngx_write_stderr(
-#ifdef NGX_COMPILER
-                "built by " NGX_COMPILER NGX_LINEFEED
-#endif
-
-#if (NGX_SSL)
-
-#ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
-                "TLS SNI support enabled" NGX_LINEFEED
-#else
-                "TLS SNI support disabled" NGX_LINEFEED
-#endif
-
-#endif
-                "configure arguments:" NGX_CONFIGURE NGX_LINEFEED);
-        }
-
-        if (!ngx_test_config) {
-            return 0;
-        }
-    }
-
-    /* TODO */ ngx_max_sockets = -1;
-
-    ngx_time_init();
-
-#if (NGX_PCRE)
-    ngx_regex_init();
-#endif
+    ngx_time_init();   // lgx_mark 时间初始化
+ 
+    ngx_regex_init();  // lgx_mark 正则初始化
 
     ngx_pid = ngx_getpid();
 
@@ -302,15 +246,7 @@ main(int argc, char *const *argv)
         return 1;
     }
 
-    /* STUB */
-#if (NGX_OPENSSL)
     ngx_ssl_init(log);
-#endif
-
-    /*
-     * init_cycle->log is required for signal handlers and
-     * ngx_process_options()
-     */
 
     ngx_memzero(&init_cycle, sizeof(ngx_cycle_t));
     init_cycle.log = log;
@@ -333,10 +269,6 @@ main(int argc, char *const *argv)
         return 1;
     }
 
-    /*
-     * ngx_crc32_table_init() requires ngx_cacheline_size set in ngx_os_init()
-     */
-
     if (ngx_crc32_table_init() != NGX_OK) {
         return 1;
     }
@@ -346,36 +278,20 @@ main(int argc, char *const *argv)
     }
 
     ngx_max_module = 0;
-    for (i = 0; ngx_modules[i]; i++) {
+    for (i = 0; ngx_modules[i]; i++) 
+    {
         ngx_modules[i]->index = ngx_max_module++;
     }
 
-    cycle = ngx_init_cycle(&init_cycle);
+    cycle = ngx_init_cycle(&init_cycle);  // 初始化配置
     if (cycle == NULL)
     {
-        if (ngx_test_config)
-        {
-            ngx_log_stderr(0, "configuration file %s test failed",
-                           init_cycle.conf_file.data);
-        }
-
         return 1;
-    }
-
-    if (ngx_test_config)
-    {
-        if (!ngx_quiet_mode)
-        {
-            ngx_log_stderr(0, "configuration file %s test is successful",
-                           cycle->conf_file.data);
-        }
-
-        return 0;
     }
 
     if (ngx_signal)
     {
-        return ngx_signal_process(cycle, ngx_signal);
+        return ngx_signal_process(cycle, ngx_signal);   // lgx_mark 处理接收到的信号
     }
 
     ngx_os_status(cycle->log);
@@ -389,53 +305,49 @@ main(int argc, char *const *argv)
         ngx_process = NGX_PROCESS_MASTER;
     }
 
-#if !(NGX_WIN32)
-
-    if (ngx_init_signals(cycle->log) != NGX_OK) {  //  lgx_mark 将nginx后台运行
+    if (ngx_init_signals(cycle->log) != NGX_OK)  // lgx_mark 设置信号处理回调函数
+    {
         return 1;
     }
 
-    if (!ngx_inherited && ccf->daemon) {
-        if (ngx_daemon(cycle->log) != NGX_OK) {
+    if (!ngx_inherited && ccf->daemon) 
+    {
+        if (ngx_daemon(cycle->log) != NGX_OK)   //  lgx_mark 将nginx后台运行
+        {
             return 1;
         }
 
         ngx_daemonized = 1;
     }
 
-    if (ngx_inherited) {
+    if (ngx_inherited)
+    {
         ngx_daemonized = 1;
     }
 
-#endif
-
-    if (ngx_create_pidfile(&ccf->pid, cycle->log) != NGX_OK) {  // lgx_mark 将nginx主进程号写入文件
+    if (ngx_create_pidfile(&ccf->pid, cycle->log) != NGX_OK) // lgx_mark 将nginx主进程号写入文件
+    {
         return 1;
     }
 
-    if (ngx_log_redirect_stderr(cycle) != NGX_OK) {  // lgx_mark 重定向错误输出描述符
+    if (ngx_log_redirect_stderr(cycle) != NGX_OK)  // lgx_mark 重定向错误输出描述符
+    {
         return 1;
-    }
-
-    if (log->file->fd != ngx_stderr) {
-        if (ngx_close_file(log->file->fd) == NGX_FILE_ERROR) {
-            ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
-                          ngx_close_file_n " built-in log failed");
-        }
     }
 
     ngx_use_stderr = 0;
 
-    if (ngx_process == NGX_PROCESS_SINGLE) {
+    if (ngx_process == NGX_PROCESS_SINGLE)  // 单进程模式
+    {
         ngx_single_process_cycle(cycle);
-
-    } else {
+    } 
+    else 
+    {
         ngx_master_process_cycle(cycle);
     }
 
     return 0;
 }
-
 
 static ngx_int_t
 ngx_add_inherited_sockets(ngx_cycle_t *cycle) // lgx_mark 执行不重启服务升级时，老的nginx通过NGINX环境变量传递监听端口 ，新的进程通过此函数打开监听端口
@@ -819,13 +731,7 @@ next:
 static ngx_int_t
 ngx_save_argv(ngx_cycle_t *cycle, int argc, char *const *argv)
 {
-#if (NGX_FREEBSD)
 
-    ngx_os_argv = (char **) argv;
-    ngx_argc = argc;
-    ngx_argv = (char **) argv;
-
-#else
     size_t     len;
     ngx_int_t  i;
 
@@ -849,8 +755,6 @@ ngx_save_argv(ngx_cycle_t *cycle, int argc, char *const *argv)
     }
 
     ngx_argv[i] = NULL;
-
-#endif
 
     ngx_os_environ = environ;
 
@@ -1323,8 +1227,8 @@ ngx_set_cpu_affinity(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
         mask[n - 1] = 0;
 
-        for (i = 0; i < value[n].len; i++) {
-
+        for (i = 0; i < value[n].len; i++) 
+        {
             ch = value[n].data[i];
 
             if (ch == ' ') {

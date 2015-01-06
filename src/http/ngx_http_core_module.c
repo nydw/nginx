@@ -5285,27 +5285,12 @@ ngx_http_disable_symlinks(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 static char *
 ngx_http_core_lowat_check(ngx_conf_t *cf, void *post, void *data)
 {
-#if (NGX_FREEBSD)
+
     ssize_t *np = data;
-
-    if ((u_long) *np >= ngx_freebsd_net_inet_tcp_sendspace) {
-        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "\"send_lowat\" must be less than %d "
-                           "(sysctl net.inet.tcp.sendspace)",
-                           ngx_freebsd_net_inet_tcp_sendspace);
-
-        return NGX_CONF_ERROR;
-    }
-
-#elif !(NGX_HAVE_SO_SNDLOWAT)
-    ssize_t *np = data;
-
     ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
                        "\"send_lowat\" is not supported, ignored");
 
     *np = 0;
-
-#endif
 
     return NGX_CONF_OK;
 }

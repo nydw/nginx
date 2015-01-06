@@ -24,21 +24,6 @@
 void
 ngx_timezone_update(void)
 {
-#if (NGX_FREEBSD)
-
-    if (getenv("TZ")) {
-        return;
-    }
-
-    putenv("TZ=UTC");
-
-    tzset();
-
-    unsetenv("TZ");
-
-    tzset();
-
-#elif (NGX_LINUX)
     time_t      s;
     struct tm  *t;
     char        buf[4];
@@ -49,7 +34,6 @@ ngx_timezone_update(void)
 
     strftime(buf, 4, "%H", t);
 
-#endif
 }
 
 

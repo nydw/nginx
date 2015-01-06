@@ -309,9 +309,8 @@ ngx_single_process_cycle(ngx_cycle_t *cycle)  // 进入单进程模式
         }
     }
 
-    for ( ;; ) {
-        ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "worker cycle");
-
+    for ( ;; ) 
+    {
         ngx_process_events_and_timers(cycle);
 
         if (ngx_terminate || ngx_quit)
@@ -328,13 +327,14 @@ ngx_single_process_cycle(ngx_cycle_t *cycle)  // 进入单进程模式
             ngx_master_process_exit(cycle);
         }
 
-        if (ngx_reconfigure)
+        if (ngx_reconfigure)   //  重配置
         {
             ngx_reconfigure = 0;
-            ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "reconfiguring");
-
+      
             cycle = ngx_init_cycle(cycle);
-            if (cycle == NULL) {
+
+            if (cycle == NULL) 
+            {
                 cycle = (ngx_cycle_t *) ngx_cycle;
                 continue;
             }

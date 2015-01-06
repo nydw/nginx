@@ -112,7 +112,7 @@ struct ngx_module_s {
 
     void                 *ctx;       // 一类模块的上下文
     ngx_command_t        *commands;
-    ngx_uint_t            type;
+    ngx_uint_t            type;    // 模块类型
 
     ngx_int_t           (*init_master)(ngx_log_t *log);
 

@@ -10,7 +10,7 @@
 #include <ngx_event.h>
 
 
-ngx_thread_volatile ngx_event_t  *ngx_posted_accept_events;   //  accept延迟事件队列
+ngx_thread_volatile ngx_event_t  *ngx_posted_accept_events;   //  accept延迟事件队列   暂存epoll从监听套接口wait到的accept事件。
 ngx_thread_volatile ngx_event_t  *ngx_posted_events;   //  普通延迟事件队列
 
 #if (NGX_THREADS)

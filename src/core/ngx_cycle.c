@@ -228,7 +228,6 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)  // lgx_mark 初始化cycle
 
     senv = environ;
 
-
     ngx_memzero(&conf, sizeof(ngx_conf_t));
     /* STUB: init array ? */
     conf.args = ngx_array_create(pool, 10, sizeof(ngx_str_t));
@@ -251,10 +250,6 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)  // lgx_mark 初始化cycle
     conf.module_type = NGX_CORE_MODULE;
     conf.cmd_type = NGX_MAIN_CONF;
 
-#if 0
-    log->log_level = NGX_LOG_DEBUG_ALL;
-#endif
-
     if (ngx_conf_param(&conf) != NGX_CONF_OK) {
         environ = senv;
         ngx_destroy_cycle_pools(&conf);
@@ -272,14 +267,17 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)  // lgx_mark 初始化cycle
                        cycle->conf_file.data);
     }
 
-    for (i = 0; ngx_modules[i]; i++) {
-        if (ngx_modules[i]->type != NGX_CORE_MODULE) {
+    for (i = 0; ngx_modules[i]; i++) 
+    {
+        if (ngx_modules[i]->type != NGX_CORE_MODULE)
+        {
             continue;
         }
 
         module = ngx_modules[i]->ctx;
 
-        if (module->init_conf) {
+        if (module->init_conf)
+        {
             if (module->init_conf(cycle, cycle->conf_ctx[ngx_modules[i]->index])
                     == NGX_CONF_ERROR)
             {
@@ -290,19 +288,24 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)  // lgx_mark 初始化cycle
         }
     }
 
-    if (ngx_process == NGX_PROCESS_SIGNALLER) {
+    if (ngx_process == NGX_PROCESS_SIGNALLER) 
+    {
         return cycle;
     }
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
-    if (ngx_test_config) {
+    if (ngx_test_config)
+    {
 
-        if (ngx_create_pidfile(&ccf->pid, log) != NGX_OK) {
+        if (ngx_create_pidfile(&ccf->pid, log) != NGX_OK)
+        {
             goto failed;
         }
 
-    } else if (!ngx_is_init_cycle(old_cycle)) {
+    } 
+    else if (!ngx_is_init_cycle(old_cycle))
+    {
 
         /*
          * we do not create the pid file in the first ngx_init_cycle() call
@@ -311,12 +314,14 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)  // lgx_mark 初始化cycle
 
         old_ccf = (ngx_core_conf_t *) ngx_get_conf(old_cycle->conf_ctx,
                   ngx_core_module);
+
         if (ccf->pid.len != old_ccf->pid.len
                 || ngx_strcmp(ccf->pid.data, old_ccf->pid.data) != 0)
         {
             /* new pid file name */
 
-            if (ngx_create_pidfile(&ccf->pid, log) != NGX_OK) {
+            if (ngx_create_pidfile(&ccf->pid, log) != NGX_OK) 
+            {
                 goto failed;
             }
 
@@ -383,6 +388,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)  // lgx_mark 初始化cycle
             goto failed;
         }
 #endif
+
     }
 
     cycle->log = &cycle->new_log;
@@ -968,8 +974,6 @@ ngx_signal_process(ngx_cycle_t *cycle, char *sig)
     ngx_file_t        file;
     ngx_core_conf_t  *ccf;
     u_char            buf[NGX_INT64_LEN + 2];
-
-    ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "signal process started");
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 

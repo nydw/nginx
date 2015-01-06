@@ -35,7 +35,7 @@
 #define EPOLL_CTL_MOD  3
 
 typedef union epoll_data {
-    void         *ptr;
+    void         *ptr;   // 指向相应的connection
     int           fd;
     uint32_t      u32;
     uint64_t      u64;
@@ -607,15 +607,15 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "epoll timer: %M", timer);
 
-    events = epoll_wait(ep, event_list, (int) nevents, timer);
+    events = epoll_wait(ep, event_list, (int) nevents, timer);  //  lgx_mark  获取事件 
 
     err = (events == -1) ? ngx_errno : 0;
 
-    if (flags & NGX_UPDATE_TIME || ngx_event_timer_alarm) {
+    if (flags & NGX_UPDATE_TIME || ngx_event_timer_alarm) {  // 更新时间
         ngx_time_update();
     }
 
-    if (err) {
+    if (err) {  // 出错处理
         if (err == NGX_EINTR) {
 
             if (ngx_event_timer_alarm) {
@@ -633,7 +633,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
         return NGX_ERROR;
     }
 
-    if (events == 0) {
+    if (events == 0) {  // 没有事件
         if (timer != NGX_TIMER_INFINITE) {
             return NGX_OK;
         }
@@ -652,9 +652,9 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
         instance = (uintptr_t) c & 1;
         c = (ngx_connection_t *) ((uintptr_t) c & (uintptr_t) ~1);  // 获取connection_t地址
 
-        rev = c->read;
+        rev = c->read;  //-------- 读事件
 
-        if (c->fd == -1 || rev->instance != instance)  // //判断读事件是否为过期事件
+        if (c->fd == -1 || rev->instance != instance)  // 判断读事件是否为过期事件
         {
 
             /*
@@ -669,24 +669,12 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 
         revents = event_list[i].events;
 
-        ngx_log_debug3(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
-                       "epoll: fd:%d ev:%04XD d:%p",
-                       c->fd, revents, event_list[i].data.ptr);
-
         if (revents & (EPOLLERR|EPOLLHUP))
         {
             ngx_log_debug2(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                            "epoll_wait() error on fd:%d ev:%04XD",
                            c->fd, revents);
         }
-
-#if 0
-        if (revents & ~(EPOLLIN|EPOLLOUT|EPOLLERR|EPOLLHUP)) {
-            ngx_log_error(NGX_LOG_ALERT, cycle->log, 0,
-                          "strange epoll_wait() events fd:%d ev:%04XD",
-                          c->fd, revents);
-        }
-#endif
 
         if ((revents & (EPOLLERR|EPOLLHUP))
                 && (revents & (EPOLLIN|EPOLLOUT)) == 0)
@@ -734,7 +722,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
             }
         }
 
-        wev = c->write;
+        wev = c->write;  //-------- 写事件
 
         if ((revents & EPOLLOUT) && wev->active) {
 
@@ -750,18 +738,23 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
                 continue;
             }
 
-            if (flags & NGX_POST_THREAD_EVENTS) {
+            if (flags & NGX_POST_THREAD_EVENTS) 
+            {
                 wev->posted_ready = 1;
 
-            } else {
+            }
+            else
+            {
                 wev->ready = 1;
             }
 
-            if (flags & NGX_POST_EVENTS) {
+            if (flags & NGX_POST_EVENTS) 
+            {
                 ngx_locked_post_event(wev, &ngx_posted_events);
-
-            } else {
-                wev->handler(wev);
+            } 
+            else 
+            {
+                wev->handler(wev);  // 调用事件回调方法来处理这个事件
             }
         }
     }

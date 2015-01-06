@@ -383,7 +383,8 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
             } else if (cf->ctx) {
                 confp = *(void **) ((char *) cf->ctx + cmd->conf);
 
-                if (confp) {
+                if (confp)
+                {
                     conf = confp[ngx_modules[i]->ctx_index];
                 }
             }
