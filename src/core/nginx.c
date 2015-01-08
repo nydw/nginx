@@ -265,11 +265,11 @@ main(int argc, char *const *argv)
         return 1;
     }
 
-    if (ngx_os_init(log) != NGX_OK) {
+    if (ngx_os_init(log) != NGX_OK) {   // lgx_mark 完成操作系统的一些信息提取，信息会被保存到一些全局变量中
         return 1;
     }
 
-    if (ngx_crc32_table_init() != NGX_OK) {
+    if (ngx_crc32_table_init() != NGX_OK) {  //  lgx_mark 初始化一个做循环冗余校验的表
         return 1;
     }
 
@@ -277,6 +277,8 @@ main(int argc, char *const *argv)
         return 1;
     }
 
+    // 初始化所有模块的index信息，即对所有模块进行编号  
+    // ngx_modules数却是在自动编译的时候生成的，位于objs/ngx_modules.c文件中  
     ngx_max_module = 0;
     for (i = 0; ngx_modules[i]; i++) 
     {
@@ -289,6 +291,7 @@ main(int argc, char *const *argv)
         return 1;
     }
 
+    // 若有信号
     if (ngx_signal)
     {
         return ngx_signal_process(cycle, ngx_signal);   // lgx_mark 处理接收到的信号

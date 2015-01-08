@@ -101,16 +101,18 @@ ngx_set_inherited_sockets(ngx_cycle_t *cycle)
 #if (NGX_HAVE_DEFERRED_ACCEPT || NGX_HAVE_TCP_FASTOPEN)
     ngx_err_t                  err;
 #endif
+
 #if (NGX_HAVE_DEFERRED_ACCEPT && defined SO_ACCEPTFILTER)
     struct accept_filter_arg   af;
 #endif
+
 #if (NGX_HAVE_DEFERRED_ACCEPT && defined TCP_DEFER_ACCEPT)
     int                        timeout;
 #endif
 
     ls = cycle->listening.elts;
-    for (i = 0; i < cycle->listening.nelts; i++) {
-
+    for (i = 0; i < cycle->listening.nelts; i++)
+    {
         ls[i].sockaddr = ngx_palloc(cycle->pool, NGX_SOCKADDRLEN);
         if (ls[i].sockaddr == NULL) {
             return NGX_ERROR;
@@ -125,7 +127,8 @@ ngx_set_inherited_sockets(ngx_cycle_t *cycle)
             continue;
         }
 
-        switch (ls[i].sockaddr->sa_family) {
+        switch (ls[i].sockaddr->sa_family) 
+        {
 
 #if (NGX_HAVE_INET6)
         case AF_INET6:
@@ -195,27 +198,6 @@ ngx_set_inherited_sockets(ngx_cycle_t *cycle)
             ls[i].sndbuf = -1;
         }
 
-#if 0
-        /* SO_SETFIB is currently a set only option */
-
-#if (NGX_HAVE_SETFIB)
-
-        olen = sizeof(int);
-
-        if (getsockopt(ls[i].fd, SOL_SOCKET, SO_SETFIB,
-                       (void *) &ls[i].setfib, &olen)
-                == -1)
-        {
-            ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_socket_errno,
-                          "getsockopt(SO_SETFIB) %V failed, ignored",
-                          &ls[i].addr_text);
-
-            ls[i].setfib = -1;
-        }
-
-#endif
-#endif
-
 #if (NGX_HAVE_TCP_FASTOPEN)
 
         olen = sizeof(int);
@@ -275,7 +257,7 @@ ngx_set_inherited_sockets(ngx_cycle_t *cycle)
         timeout = 0;
         olen = sizeof(int);
 
-        if (getsockopt(ls[i].fd, IPPROTO_TCP, TCP_DEFER_ACCEPT, &timeout, &olen)
+        if (getsockopt(ls[i].fd, IPPROTO_TCP, TCP_DEFER_ACCEPT, &timeout, &olen)  // ¼ì²é timeout
                 == -1)
         {
             err = ngx_socket_errno;

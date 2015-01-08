@@ -68,8 +68,8 @@
 #define NGX_CONF_BLOCK_DONE  2
 #define NGX_CONF_FILE_DONE   3
 
-#define NGX_CORE_MODULE      0x45524F43  /* "CORE" */
-#define NGX_CONF_MODULE      0x464E4F43  /* "CONF" */   //  只有一个这样的模块类型
+#define NGX_CORE_MODULE      0x45524F43  /* "CORE" */   // lgx_mark core模块类型 
+#define NGX_CONF_MODULE      0x464E4F43  /* "CONF" */   // lgx_mark conf模块类型  只有一个这样的模块类型
 
 
 #define NGX_MAX_CONF_ERRSTR  1024
@@ -78,7 +78,7 @@
 struct ngx_command_s {
     ngx_str_t             name;   // 配置项名称
     ngx_uint_t            type;   // 配置项可以出项的位置，server location
-    char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+    char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);  // 用于将配置数据填写到配置结构中
     ngx_uint_t            conf;   // 在配置文件中的位置
     ngx_uint_t            offset;
     void                 *post;
@@ -112,7 +112,7 @@ struct ngx_module_s {
 
     void                 *ctx;       // 一类模块的上下文
     ngx_command_t        *commands;
-    ngx_uint_t            type;    // 模块类型
+    ngx_uint_t            type;      // 模块类型
 
     ngx_int_t           (*init_master)(ngx_log_t *log);
 

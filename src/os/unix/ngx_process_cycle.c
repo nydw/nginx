@@ -32,7 +32,7 @@ static void ngx_cache_manager_process_handler(ngx_event_t *ev);
 static void ngx_cache_loader_process_handler(ngx_event_t *ev);
 
 
-ngx_uint_t    ngx_process;
+ngx_uint_t    ngx_process;   // lgx_mark  ÓÃÓÚ¼ÇÂ¼Òª²ÉÓÃµÄ¹¤×÷Ä£Ê½
 ngx_pid_t     ngx_pid;
 ngx_uint_t    ngx_threaded;
 
@@ -48,7 +48,7 @@ sig_atomic_t  ngx_reopen;
 
 sig_atomic_t  ngx_change_binary;
 ngx_pid_t     ngx_new_binary;
-ngx_uint_t    ngx_inherited;
+ngx_uint_t    ngx_inherited;   // ¼Ì³Ðsockets
 ngx_uint_t    ngx_daemonized;
 
 sig_atomic_t  ngx_noaccept;
@@ -295,15 +295,17 @@ ngx_single_process_cycle(ngx_cycle_t *cycle)  // ½øÈëµ¥½ø³ÌÄ£Ê½
 {
     ngx_uint_t  i;
 
-    if (ngx_set_environment(cycle, NULL) == NULL) {
-        /* fatal */
+    if (ngx_set_environment(cycle, NULL) == NULL) 
+    {
         exit(2);
     }
 
-    for (i = 0; ngx_modules[i]; i++) {
-        if (ngx_modules[i]->init_process) {
-            if (ngx_modules[i]->init_process(cycle) == NGX_ERROR) {  // ³õÊ¼»¯Ã¿¸öÄ£¿é
-                /* fatal */
+    for (i = 0; ngx_modules[i]; i++) 
+    {
+        if (ngx_modules[i]->init_process) 
+        {
+            if (ngx_modules[i]->init_process(cycle) == NGX_ERROR) // ³õÊ¼»¯Ã¿¸öÄ£¿é
+            {  
                 exit(2);
             }
         }
@@ -350,7 +352,6 @@ ngx_single_process_cycle(ngx_cycle_t *cycle)  // ½øÈëµ¥½ø³ÌÄ£Ê½
         }
     }
 }
-
 
 static void
 ngx_start_worker_processes(ngx_cycle_t *cycle, ngx_int_t n, ngx_int_t type) // lgx_mark ¿ªÆôËùÓÐµÄwork½ø³Ì , ÉèÖÃ½ø³Ì¼äsocketpairÍ¨ÐÅ»úÖÆ
@@ -791,17 +792,21 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data) // lgx_mark Ö÷Ñ­»·: Ö´Ð
     }
 #endif
 
-    for ( ;; ) {
+    for ( ;; ) 
+    {
 
-        if (ngx_exiting) {
+        if (ngx_exiting) 
+        {
 
             c = cycle->connections;
 
-            for (i = 0; i < cycle->connection_n; i++) {
+            for (i = 0; i < cycle->connection_n; i++) 
+            {
 
                 /* THREAD: lock */
 
-                if (c[i].fd != -1 && c[i].idle) {
+                if (c[i].fd != -1 && c[i].idle) 
+                {
                     c[i].close = 1;
                     c[i].read->handler(c[i].read);
                 }
@@ -817,27 +822,31 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data) // lgx_mark Ö÷Ñ­»·: Ö´Ð
 
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "worker cycle");
 
-        ngx_process_events_and_timers(cycle);
+        ngx_process_events_and_timers(cycle);    // lgx_mark NginxÊÂ¼þ´¦ÀíµÄÈë¿Úº¯Êý
 
-        if (ngx_terminate) {
+        if (ngx_terminate) 
+        {
             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "exiting");
 
             ngx_worker_process_exit(cycle);
         }
 
-        if (ngx_quit) {
+        if (ngx_quit) 
+        {
             ngx_quit = 0;
             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0,
                           "gracefully shutting down");
             ngx_setproctitle("worker process is shutting down");
 
-            if (!ngx_exiting) {
+            if (!ngx_exiting) 
+            {
                 ngx_close_listening_sockets(cycle);
                 ngx_exiting = 1;
             }
         }
 
-        if (ngx_reopen) {
+        if (ngx_reopen)
+        {
             ngx_reopen = 0;
             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "reopening logs");
             ngx_reopen_files(cycle, -1);

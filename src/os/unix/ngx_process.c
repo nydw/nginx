@@ -116,7 +116,8 @@ ngx_spawn_process(ngx_cycle_t *cycle, ngx_spawn_proc_pt proc, void *data,
     }
 
 
-    if (respawn != NGX_PROCESS_DETACHED) {
+    if (respawn != NGX_PROCESS_DETACHED) 
+    {
 
         /* Solaris 9 still has no AF_LOCAL */
 

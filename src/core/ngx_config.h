@@ -9,7 +9,7 @@
 #define _NGX_CONFIG_H_INCLUDED_
 
 
-#include <ngx_auto_headers.h>
+#include <ngx_auto_headers.h>  // lgx_mark  configure之后自动生成的版本信息头文件  ngx_modules.c
 
 
 #if defined __DragonFly__ && !defined __FreeBSD__

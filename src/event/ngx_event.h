@@ -462,7 +462,7 @@ extern ngx_os_io_t  ngx_io;
 #define ngx_send_chain       ngx_io.send_chain
 
 
-#define NGX_EVENT_MODULE      0x544E5645  /* "EVNT" */
+#define NGX_EVENT_MODULE      0x544E5645  /* "EVNT" */  // lgx_mark EVNT 事件类型
 #define NGX_EVENT_CONF        0x02000000
 
 

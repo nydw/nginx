@@ -52,7 +52,7 @@ struct ngx_cycle_s {  // 围绕此结构体控制进程运行
 
     ngx_array_t               listening;  // 监听的端口数组
     ngx_array_t               paths;   // 所有要操作的目录
-    ngx_list_t                open_files;  // 已经打开的所有文件
+    ngx_list_t                open_files;  // 已经打开的所有文件；从命令行输入的参数得来的
     ngx_list_t                shared_memory;  // 每个元素表示一块共享内存
 
     ngx_uint_t                connection_n;   // lgx_mark  当前进程所有连接对象的总数

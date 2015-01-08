@@ -56,7 +56,7 @@
 #include <sys/utsname.h>        /* uname() */
 
 
-#include <ngx_auto_config.h>
+#include <ngx_auto_config.h>   // lgx_mark  configure之后 自动生成的版本信息头文件
 
 
 #if (NGX_HAVE_POSIX_SEM)

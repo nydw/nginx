@@ -62,18 +62,18 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)  // lgx_mark 初始化cycle
     tp = ngx_timeofday();
     tp->sec = 0;
 
-    ngx_time_update();
+    ngx_time_update();    // 时间管理初始化
 
 
     log = old_cycle->log;
 
-    pool = ngx_create_pool(NGX_CYCLE_POOL_SIZE, log);
+    pool = ngx_create_pool(NGX_CYCLE_POOL_SIZE, log);   // 创建内存池
     if (pool == NULL) {
         return NULL;
     }
     pool->log = log;
 
-    cycle = ngx_pcalloc(pool, sizeof(ngx_cycle_t));
+    cycle = ngx_pcalloc(pool, sizeof(ngx_cycle_t));    // 从内存池分配cycle
     if (cycle == NULL) {
         ngx_destroy_pool(pool);
         return NULL;
@@ -134,11 +134,13 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)  // lgx_mark 初始化cycle
             n += part->nelts;
         }
 
-    } else {
+    } 
+    else 
+    {
         n = 20;
     }
 
-    if (ngx_list_init(&cycle->open_files, pool, n, sizeof(ngx_open_file_t))
+    if (ngx_list_init(&cycle->open_files, pool, n, sizeof(ngx_open_file_t)) // 存放打开的文件
             != NGX_OK)
     {
         ngx_destroy_pool(pool);
@@ -157,7 +159,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)  // lgx_mark 初始化cycle
         n = 1;
     }
 
-    if (ngx_list_init(&cycle->shared_memory, pool, n, sizeof(ngx_shm_zone_t))
+    if (ngx_list_init(&cycle->shared_memory, pool, n, sizeof(ngx_shm_zone_t))  // 存放共享内存
             != NGX_OK)
     {
         ngx_destroy_pool(pool);
@@ -166,7 +168,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)  // lgx_mark 初始化cycle
 
     n = old_cycle->listening.nelts ? old_cycle->listening.nelts : 10;
 
-    cycle->listening.elts = ngx_pcalloc(pool, n * sizeof(ngx_listening_t));
+    cycle->listening.elts = ngx_pcalloc(pool, n * sizeof(ngx_listening_t));  // 申请监听端口数组
     if (cycle->listening.elts == NULL) {
         ngx_destroy_pool(pool);
         return NULL;
@@ -181,7 +183,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)  // lgx_mark 初始化cycle
     ngx_queue_init(&cycle->reusable_connections_queue);
 
 
-    cycle->conf_ctx = ngx_pcalloc(pool, ngx_max_module * sizeof(void *));
+    cycle->conf_ctx = ngx_pcalloc(pool, ngx_max_module * sizeof(void *));  // 存放每个模块配置上下文
     if (cycle->conf_ctx == NULL) {
         ngx_destroy_pool(pool);
         return NULL;
@@ -216,7 +218,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)  // lgx_mark 初始化cycle
         module = ngx_modules[i]->ctx;
 
         if (module->create_conf) {
-            rv = module->create_conf(cycle);
+            rv = module->create_conf(cycle);  // 使用每个模块对应的create_conf创建相应的配置结构存储空间
             if (rv == NULL) {
                 ngx_destroy_pool(pool);
                 return NULL;
@@ -229,19 +231,20 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)  // lgx_mark 初始化cycle
     senv = environ;
 
     ngx_memzero(&conf, sizeof(ngx_conf_t));
-    /* STUB: init array ? */
+     
     conf.args = ngx_array_create(pool, 10, sizeof(ngx_str_t));
-    if (conf.args == NULL) {
+    if (conf.args == NULL)
+    {
         ngx_destroy_pool(pool);
         return NULL;
     }
 
     conf.temp_pool = ngx_create_pool(NGX_CYCLE_POOL_SIZE, log);
-    if (conf.temp_pool == NULL) {
+    if (conf.temp_pool == NULL) 
+    {
         ngx_destroy_pool(pool);
         return NULL;
     }
-
 
     conf.ctx = cycle->conf_ctx;
     conf.cycle = cycle;
@@ -256,7 +259,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)  // lgx_mark 初始化cycle
         return NULL;
     }
 
-    if (ngx_conf_parse(&conf, &cycle->conf_file) != NGX_CONF_OK) {
+    if (ngx_conf_parse(&conf, &cycle->conf_file) != NGX_CONF_OK) {  // 解析配置文件
         environ = senv;
         ngx_destroy_cycle_pools(&conf);
         return NULL;
@@ -364,7 +367,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)  // lgx_mark 初始化cycle
             continue;
         }
 
-        file[i].fd = ngx_open_file(file[i].name.data,
+        file[i].fd = ngx_open_file(file[i].name.data,   // 遍历open_files链表，打开所有文件
                                    NGX_FILE_APPEND,
                                    NGX_FILE_CREATE_OR_OPEN,
                                    NGX_FILE_DEFAULT_ACCESS);
@@ -400,7 +403,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)  // lgx_mark 初始化cycle
     part = &cycle->shared_memory.part;
     shm_zone = part->elts;
 
-    for (i = 0; /* void */ ; i++) {
+    for (i = 0; /* void */ ; i++) {  // 创建及初始化各个共享内存段
 
         if (i >= part->nelts) {
             if (part->next == NULL) {
@@ -484,7 +487,7 @@ shm_zone_found:
 
 
     /* handle the listening sockets */
-
+    // 遍历listening数组，打开所有的监听套接口（依次进行socket、bind、listen），同时设置一些socket选项及文件描述符属性，如非阻塞等。
     if (old_cycle->listening.nelts) {
         ls = old_cycle->listening.elts;
         for (i = 0; i < old_cycle->listening.nelts; i++) {
@@ -582,7 +585,7 @@ shm_zone_found:
         }
     }
 
-    if (ngx_open_listening_sockets(cycle) != NGX_OK) {
+    if (ngx_open_listening_sockets(cycle) != NGX_OK) { // lgx_mark sockets(socket()->setsockopt()->bind()->listen())
         goto failed;
     }
 
@@ -609,7 +612,7 @@ shm_zone_found:
     }
 
 
-    /* close and delete stuff that lefts from an old cycle */
+    /* close and delete stuff that lefts from an old cycle */  // 删除旧的cycle
 
     /* free the unnecessary shared memory */
 

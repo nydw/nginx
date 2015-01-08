@@ -327,7 +327,6 @@ ngx_epoll_init(ngx_cycle_t *cycle, ngx_msec_t timer)
 
 #if (NGX_HAVE_FILE_AIO)
         ngx_epoll_aio_init(cycle, epcf); // lgx_mark “Ï≤ΩIO≥ı ºªØ
-
 #endif
 
     }

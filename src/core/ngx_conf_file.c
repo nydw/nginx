@@ -810,7 +810,7 @@ ngx_conf_full_name(ngx_cycle_t *cycle, ngx_str_t *name, ngx_uint_t conf_prefix)
 
 
 ngx_open_file_t *
-ngx_conf_open_file(ngx_cycle_t *cycle, ngx_str_t *name)
+ngx_conf_open_file(ngx_cycle_t *cycle, ngx_str_t *name)  // cycle->open_files 向open_files链表中写入文件名
 {
     ngx_str_t         full;
     ngx_uint_t        i;

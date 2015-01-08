@@ -6,7 +6,7 @@
 
 
 #ifndef _NGX_CORE_H_INCLUDED_
-#define _NGX_CORE_H_INCLUDED_
+#define _NGX_CORE_H_INCLUDED_     // lgx_mark 核心头文件，集合所有的头文件
 
 
 typedef struct ngx_module_s      ngx_module_t;
